@@ -1,3 +1,4 @@
+import { siteOrigin } from "@/lib/env";
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { loadPanel } from "@/lib/data/live";
@@ -135,15 +136,19 @@ export default async function Page({
       {action === "registrar" ? (
         <>
           <p className="mb-5 text-sm text-slate-500">
-            Ingresa el correo y los datos de la persona. Se creará su ficha
-            según el rol y recibirá una invitación para configurar su
-            contraseña.
+            Registra los datos de la persona. Para estudiantes, docentes y
+            tutores puedes crear solo la ficha o añadir una cuenta con
+            invitación por correo.
           </p>
           <AccountCreateForm
             action={accountAction}
             roles={visibleRoles}
             defaultRole={categoryRole || visibleRoles[0]}
             maxDate={localToday()}
+            invitationAvailable={Boolean(
+              siteOrigin()?.startsWith("https://") &&
+              process.env.SUPABASE_SECRET_KEY,
+            )}
           />
           <details className="mt-6 rounded-xl border border-border p-5">
             <summary className="cursor-pointer font-medium">

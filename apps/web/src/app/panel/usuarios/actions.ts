@@ -209,6 +209,58 @@ async function rollbackCreatedAccount(
   return true;
 }
 
+async function validateNewFicha(
+  supabase: DbClient,
+  rol: Role,
+  form: FormData,
+  newPerson: ReturnType<typeof personValues>,
+): Promise<string | null> {
+  const validation = validatePerson(newPerson);
+  if (validation) return validation;
+  const rude = String(form.get("rude") || "").trim();
+  const gender = String(form.get("genero") || "").trim();
+  const birthDate = String(form.get("fecha_nacimiento") || "").trim();
+  const specialty = String(form.get("especialidad") || "").trim();
+  if (rol === "ESTUDIANTE") {
+    if (rude.length > 40) return "El RUDE admite hasta 40 caracteres.";
+    if (gender && !["M", "F", "NO_ESPECIFICADO"].includes(gender))
+      return "Selecciona un género válido.";
+    if (
+      birthDate &&
+      (!validDate(birthDate) ||
+        birthDate < "1900-01-01" ||
+        birthDate > localToday())
+    )
+      return "La fecha de nacimiento debe ser válida y no futura.";
+  }
+  if (rol === "DOCENTE" && specialty.length > 200)
+    return "La especialidad admite hasta 200 caracteres.";
+
+  // Comprobar duplicados antes de emitir un correo que luego quedaría sin ficha.
+  if (newPerson.ci) {
+    const existing = await supabase
+      .from("personas")
+      .select("id")
+      .eq("ci", newPerson.ci)
+      .maybeSingle();
+    if (existing.error) return "No se pudo comprobar el CI. Reintenta.";
+    if (existing.data)
+      return "El CI ya tiene una ficha. Selecciona la persona existente al crear el acceso.";
+  }
+  if (rol === "ESTUDIANTE" && rude) {
+    const existing = await supabase
+      .from("estudiantes")
+      .select("id")
+      .eq("rude", rude)
+      .maybeSingle();
+    if (existing.error) return "No se pudo comprobar el RUDE. Reintenta.";
+    if (existing.data)
+      return "El RUDE ya está registrado. Revisa la ficha antes de crear otro acceso.";
+  }
+
+  return null;
+}
+
 export async function accountAction(_: string, form: FormData) {
   const { supabase, profile, user } = await requireProfile();
   if (!canManage(profile.rol)) return "Sin permiso.";
@@ -347,6 +399,34 @@ export async function accountAction(_: string, form: FormData) {
     return null;
   };
   if (op === "create") {
+    if (form.get("solo_ficha") === "on") {
+      if (
+        !isRole(rol) ||
+        !["ESTUDIANTE", "DOCENTE", "PADRE"].includes(rol) ||
+        form.get("persona_nueva") !== "on"
+      )
+        return "El registro sin cuenta solo está disponible para una nueva ficha de estudiante, docente o tutor.";
+      const person = personValues(form);
+      const validation = await validateNewFicha(supabase, rol, form, person);
+      if (validation) return validation;
+      const created = await createPersonAndFicha(supabase, rol, form, person);
+      if ("error" in created) {
+        if (created.fichaId) {
+          revalidatePath("/panel", "layout");
+          return "La ficha fue creada. Revísala en Consultar antes de volver a registrar; no se creó una cuenta ni se envió correo.";
+        }
+        return created.error;
+      }
+      revalidatePath("/panel", "layout");
+      return (
+        "Ficha registrada correctamente, sin cuenta ni envío de correo. " +
+        (rol === "ESTUDIANTE"
+          ? "Ya puedes matricular al estudiante desde Registro de estudiante → Editar."
+          : rol === "DOCENTE"
+            ? "Ya puedes asignarle materias y cursos desde Gestión de docente → Editar."
+            : "Ya puedes vincular al tutor desde la ficha del estudiante.")
+      );
+    }
     if (!url || !secret)
       return "Configura SUPABASE_SECRET_KEY solo en el servidor para invitar cuentas.";
     const origin = siteOrigin();
@@ -360,48 +440,8 @@ export async function accountAction(_: string, form: FormData) {
     if (form.get("persona_nueva") === "on") {
       if (!isRole(rol)) return "Selecciona un rol válido.";
       const newPerson = personValues(form);
-      const validation = validatePerson(newPerson);
+      const validation = await validateNewFicha(supabase, rol, form, newPerson);
       if (validation) return validation;
-      const rude = String(form.get("rude") || "").trim();
-      const gender = String(form.get("genero") || "").trim();
-      const birthDate = String(form.get("fecha_nacimiento") || "").trim();
-      const specialty = String(form.get("especialidad") || "").trim();
-      if (rol === "ESTUDIANTE") {
-        if (rude.length > 40) return "El RUDE admite hasta 40 caracteres.";
-        if (gender && !["M", "F", "NO_ESPECIFICADO"].includes(gender))
-          return "Selecciona un género válido.";
-        if (
-          birthDate &&
-          (!validDate(birthDate) ||
-            birthDate < "1900-01-01" ||
-            birthDate > localToday())
-        )
-          return "La fecha de nacimiento debe ser válida y no futura.";
-      }
-      if (rol === "DOCENTE" && specialty.length > 200)
-        return "La especialidad admite hasta 200 caracteres.";
-
-      // Comprobar duplicados antes de emitir un correo que luego quedaría sin ficha.
-      if (newPerson.ci) {
-        const existing = await supabase
-          .from("personas")
-          .select("id")
-          .eq("ci", newPerson.ci)
-          .maybeSingle();
-        if (existing.error) return "No se pudo comprobar el CI. Reintenta.";
-        if (existing.data)
-          return "El CI ya tiene una ficha. Selecciona la persona existente al crear el acceso.";
-      }
-      if (rol === "ESTUDIANTE" && rude) {
-        const existing = await supabase
-          .from("estudiantes")
-          .select("id")
-          .eq("rude", rude)
-          .maybeSingle();
-        if (existing.error) return "No se pudo comprobar el RUDE. Reintenta.";
-        if (existing.data)
-          return "El RUDE ya está registrado. Revisa la ficha antes de crear otro acceso.";
-      }
 
       const invited = await admin.auth.admin.inviteUserByEmail(email, {
         redirectTo: `${origin}/auth/invitacion`,

@@ -140,3 +140,91 @@ describe("invitaciones y control de cuentas", () => {
     expect(m.deleteUser).toHaveBeenCalledWith(invitedId);
   });
 });
+
+describe("registro académico sin cuenta", () => {
+  const ficha = (extra: Record<string, string> = {}) =>
+    form({
+      rol: "ESTUDIANTE",
+      persona_nueva: "on",
+      solo_ficha: "on",
+      nombres: "Estudiante de prueba",
+      ...extra,
+    });
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
+    vi.stubEnv("SUPABASE_SECRET_KEY", "");
+    m.rpc.mockResolvedValue({ data: invitedId, error: null });
+    m.from.mockReturnValue(query({ persona_id: personId }));
+  });
+  it.each(["DIRECTOR", "SECRETARIA"])(
+    "permite a %s registrar sin correo ni clave administrativa",
+    async (rol) => {
+      m.requireProfile.mockResolvedValue({
+        profile: { rol },
+        user: { id: userId },
+        supabase: { rpc: m.rpc, from: m.from },
+      });
+      expect(await accountAction("", ficha())).toContain(
+        "Ficha registrada correctamente",
+      );
+      expect(m.rpc).toHaveBeenCalledWith(
+        "guardar_ficha_academica",
+        expect.objectContaining({
+          p_tipo: "estudiantes",
+          p_persona: expect.objectContaining({
+            nombres: "Estudiante de prueba",
+          }),
+        }),
+      );
+      expect(m.createClient).not.toHaveBeenCalled();
+      expect(m.invite).not.toHaveBeenCalled();
+    },
+  );
+  it.each(["DOCENTE", "ESTUDIANTE", "PADRE"])(
+    "impide a %s crear fichas",
+    async (rol) => {
+      m.requireProfile.mockResolvedValue({
+        profile: { rol },
+        user: { id: userId },
+        supabase: { rpc: m.rpc, from: m.from },
+      });
+      expect(await accountAction("", ficha())).toBe("Sin permiso.");
+      expect(m.rpc).not.toHaveBeenCalled();
+    },
+  );
+  it("no permite usar esta opción para cuentas administrativas ni fichas existentes", async () => {
+    expect(await accountAction("", ficha({ rol: "DIRECTOR" }))).toContain(
+      "solo está disponible",
+    );
+    expect(
+      await accountAction("", ficha({ persona_nueva: "", persona: personId })),
+    ).toContain("solo está disponible");
+    expect(m.rpc).not.toHaveBeenCalled();
+  });
+  it.each(["ci", "rude"])(
+    "rechaza %s duplicado antes de insertar",
+    async (campo) => {
+      m.from.mockReturnValue(query({ id: personId }));
+      expect(
+        await accountAction("", ficha({ [campo]: "DEMO-DUPLICADO" })),
+      ).toMatch(/ya tiene una ficha|ya está registrado/);
+      expect(m.rpc).not.toHaveBeenCalled();
+      expect(m.invite).not.toHaveBeenCalled();
+    },
+  );
+  it("informa la creación parcial sin invitar ni repetir el registro", async () => {
+    m.from.mockReturnValue(query(null));
+    expect(await accountAction("", ficha())).toContain(
+      "La ficha fue creada. Revísala en Consultar",
+    );
+    expect(m.rpc).toHaveBeenCalledTimes(1);
+    expect(m.invite).not.toHaveBeenCalled();
+  });
+  it("informa un fallo de guardado sin crear una cuenta", async () => {
+    m.rpc.mockResolvedValue({ data: null, error: { code: "23514" } });
+    expect(await accountAction("", ficha())).toContain(
+      "No se pudo crear la ficha",
+    );
+    expect(m.createClient).not.toHaveBeenCalled();
+  });
+});

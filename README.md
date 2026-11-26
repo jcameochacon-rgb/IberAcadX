@@ -1,6 +1,8 @@
-# IberAcad 0.12.0 · Web y móvil
+# IberAcad 0.12.1 · Web y móvil
 
 Sistema de gestión académica de la U.E. Iberdrola A. Esta revisión parte del archivo modificado `v0.11.rar`: conserva el login compacto, las fichas y las categorías añadidas, y corrige navegación, asignaciones y acceso móvil.
+
+Corrección 0.12.1: permite registrar fichas de estudiantes, docentes y tutores en localhost sin enviar invitaciones. Consulta [ACTUALIZACION_0121.md](ACTUALIZACION_0121.md).
 
 ## Empieza aquí
 
