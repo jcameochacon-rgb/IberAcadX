@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "IberAcad",
+    "slug": "iberacad",
+    "version": "0.12.0",
+    "scheme": "iberacad",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "ios": {
+      "bundleIdentifier": "bo.edu.iberdrola.iberacad",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "bo.edu.iberdrola.iberacad"
+    },
+    "plugins": [
+      "expo-sharing"
+    ]
+  }
+}

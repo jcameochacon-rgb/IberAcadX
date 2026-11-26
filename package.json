@@ -1,0 +1,36 @@
+{
+  "name": "iberdrola-a",
+  "version": "0.12.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @iberdrola/web",
+    "mobile": "npm run start --workspace @iberdrola/mobile",
+    "mobile:tunnel": "npm run start --workspace @iberdrola/mobile -- --tunnel",
+    "mobile:android": "npm run android --workspace @iberdrola/mobile",
+    "mobile:ios": "npm run ios --workspace @iberdrola/mobile",
+    "build": "npm run build --workspace @iberdrola/web",
+    "start": "npm run start --workspace @iberdrola/web",
+    "typecheck": "npm run typecheck --workspace @iberdrola/web && npm run typecheck --workspace @iberdrola/mobile",
+    "lint": "npm run lint --workspace @iberdrola/web",
+    "types:generate": "node scripts/generate-database-types.mjs",
+    "test:db": "node supabase/tests/phase10.mjs",
+    "test:web": "npm run test --workspace @iberdrola/web",
+    "test": "npm run test:db && npm run test:web",
+    "test:e2e": "playwright test",
+    "format": "prettier --write apps/web/src apps/mobile packages/shared/src scripts tests playwright.config.ts",
+    "mobile:export": "npm run export:android --workspace @iberdrola/mobile"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@playwright/test": "1.63.0",
+    "prettier": "3.9.9"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
