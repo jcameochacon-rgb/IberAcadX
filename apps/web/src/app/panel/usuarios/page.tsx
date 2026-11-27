@@ -340,6 +340,18 @@ export default async function Page({
             id: a.id,
             name: name(a.persona_id),
             detail: roleLabels[a.rol],
+<<<<<<< HEAD
+=======
+            category: roleLabels[a.rol],
+            info: {
+              CI: people.data.find((p) => p.id === a.persona_id)?.ci || "—",
+              Teléfono:
+                people.data.find((p) => p.id === a.persona_id)?.telefono || "—",
+              Dirección:
+                people.data.find((p) => p.id === a.persona_id)?.direccion ||
+                "—",
+            },
+>>>>>>> edc0f64 (v0.12x)
             status: a.activo ? "Activo" : "Inactivo",
           }))}
         />

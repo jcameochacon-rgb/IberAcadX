@@ -1,6 +1,10 @@
 {
   "name": "iberdrola-a",
+<<<<<<< HEAD
   "version": "0.12.1",
+=======
+  "version": "0.12.2",
+>>>>>>> edc0f64 (v0.12x)
   "private": true,
   "type": "module",
   "workspaces": [

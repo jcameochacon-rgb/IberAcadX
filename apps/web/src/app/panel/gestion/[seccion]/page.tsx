@@ -104,7 +104,26 @@ export default async function ManagementPage({
     (teacherFilter && !uuidPattern.test(teacherFilter))
   )
     notFound();
+<<<<<<< HEAD
   const filterQuery = new URLSearchParams();
+=======
+  const estado = textParam(query.estado),
+    campo = textParam(query.campo),
+    grado = textParam(query.grado),
+    gestion = textParam(query.gestion),
+    genero = textParam(query.genero);
+  if (gestion && !uuidPattern.test(gestion)) notFound();
+  const years = seccion === "cursos" && !editing ? await loadCourseYears() : [];
+  const filterQuery = new URLSearchParams();
+  for (const [key, value] of Object.entries({
+    estado,
+    campo,
+    grado,
+    gestion,
+    genero,
+  }))
+    if (value) filterQuery.set(key, value);
+>>>>>>> edc0f64 (v0.12x)
   if (courseFilter) filterQuery.set("curso", courseFilter);
   if (teacherFilter) filterQuery.set("docente", teacherFilter);
   const filterSuffix = filterQuery.size ? `&${filterQuery}` : "";
@@ -113,6 +132,14 @@ export default async function ManagementPage({
     : await loadManagement(seccion, q, page, {
         curso: courseFilter,
         docente: teacherFilter,
+<<<<<<< HEAD
+=======
+        estado,
+        campo,
+        grado,
+        gestion,
+        genero,
+>>>>>>> edc0f64 (v0.12x)
       });
   const loaded = editing ? await loadRecord(seccion, id || null) : null;
   if (editing && !loaded) notFound();
@@ -439,6 +466,7 @@ export default async function ManagementPage({
             {teacherFilter && (
               <input type="hidden" name="docente" value={teacherFilter} />
             )}
+<<<<<<< HEAD
             <Input
               name="q"
               defaultValue={q}
@@ -455,6 +483,126 @@ export default async function ManagementPage({
               Buscar
             </Button>
             {q && (
+=======
+            <label className="grid gap-1 text-xs text-slate-600">
+              Buscar
+              <Input
+                name="q"
+                defaultValue={q}
+                aria-label="Buscar registros"
+                placeholder={
+                  seccion === "cursos"
+                    ? "Buscar paralelo…"
+                    : campo === "rude"
+                      ? "Escribe el RUDE…"
+                      : campo === "especialidad"
+                        ? "Escribe la especialidad…"
+                        : ["estudiantes", "docentes", "tutores"].includes(
+                              seccion,
+                            )
+                          ? "Nombre, apellido, CI o teléfono…"
+                          : "Nombre o apellido…"
+                }
+                maxLength={100}
+                className="max-w-sm"
+              />
+            </label>
+            {["estudiantes", "docentes"].includes(seccion) && (
+              <label className="grid gap-1 text-xs text-slate-600">
+                Buscar en
+                <select
+                  name="campo"
+                  defaultValue={campo}
+                  className="h-10 rounded-lg border border-slate-200 bg-white px-3"
+                >
+                  <option value="">Datos personales</option>
+                  {seccion === "estudiantes" ? (
+                    <option value="rude">RUDE</option>
+                  ) : (
+                    <option value="especialidad">Especialidad</option>
+                  )}
+                </select>
+              </label>
+            )}
+            <label className="grid gap-1 text-xs text-slate-600">
+              Estado
+              <select
+                name="estado"
+                defaultValue={estado}
+                className="h-10 rounded-lg border border-slate-200 bg-white px-3"
+              >
+                <option value="">Todos</option>
+                {(seccion === "matriculas"
+                  ? [
+                      ["ACTIVA", "Activa"],
+                      ["RETIRADA", "Retirada"],
+                      ["FINALIZADA", "Finalizada"],
+                    ]
+                  : [
+                      ["activo", "Activo"],
+                      ["inactivo", "Inactivo"],
+                    ]
+                ).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {seccion === "estudiantes" && (
+              <label className="grid gap-1 text-xs text-slate-600">
+                Género
+                <select
+                  name="genero"
+                  defaultValue={genero}
+                  className="h-10 rounded-lg border border-slate-200 bg-white px-3"
+                >
+                  <option value="">Todos</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
+                  <option value="NO_ESPECIFICADO">No especificado</option>
+                </select>
+              </label>
+            )}
+            {seccion === "cursos" && (
+              <>
+                <label className="grid gap-1 text-xs text-slate-600">
+                  Grado
+                  <select
+                    name="grado"
+                    defaultValue={grado}
+                    className="h-10 rounded-lg border border-slate-200 bg-white px-3"
+                  >
+                    <option value="">Todos</option>
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <option key={n} value={n}>
+                        {n}°
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-1 text-xs text-slate-600">
+                  Gestión
+                  <select
+                    name="gestion"
+                    defaultValue={gestion}
+                    className="h-10 rounded-lg border border-slate-200 bg-white px-3"
+                  >
+                    <option value="">Todas</option>
+                    {years.map((y) => (
+                      <option key={y.id} value={y.id}>
+                        {y.anio}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
+            <Button variant="outline" type="submit">
+              Buscar
+            </Button>
+            {(q || filterQuery.size > 0) && (
+>>>>>>> edc0f64 (v0.12x)
               <Link
                 href={`${base}?accion=${mode}`}
                 className="text-sm text-primary"
@@ -493,7 +641,11 @@ export default async function ManagementPage({
                     {listing.columns.map((c) => (
                       <td
                         key={c.key}
+<<<<<<< HEAD
                         className="whitespace-nowrap px-5 py-4 text-xs"
+=======
+                        className="min-w-28 max-w-xs break-words px-5 py-4 text-sm"
+>>>>>>> edc0f64 (v0.12x)
                       >
                         {row.cells[c.key] || "—"}
                       </td>
